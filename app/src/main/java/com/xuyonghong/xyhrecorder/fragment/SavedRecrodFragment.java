@@ -36,6 +36,8 @@ public class SavedRecrodFragment extends Fragment {
         this.mListener = mListener;
     }
 
+    public static final String TITLE = "已存录音";
+
     public SavedRecrodFragment() {
         // Required empty public constructor
     }

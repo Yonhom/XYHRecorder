@@ -52,6 +52,10 @@ public class RecordFragment extends Fragment {
         this.mListener = mListener;
     }
 
+    /**
+     * the current fragment's title
+     */
+    public static final String TITLE = "录音";
 
     public RecordFragment() {
         // Required empty public constructor
