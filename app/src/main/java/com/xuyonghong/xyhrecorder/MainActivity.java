@@ -74,12 +74,11 @@ public class MainActivity extends AppCompatActivity implements FragmentInteracti
         RecordPagerAdapter adapter = new RecordPagerAdapter(getSupportFragmentManager());
         // record fragment
         RecordFragment recordFragment = new RecordFragment();
-        recordFragment.setmListener(this);
         adapter.addFragment(recordFragment);
         // saved record fragment
-        SavedRecrodFragment savedRecrodFragment = new SavedRecrodFragment();
-        savedRecrodFragment.setmListener(this);
+        final SavedRecrodFragment savedRecrodFragment = new SavedRecrodFragment();
         adapter.addFragment(savedRecrodFragment);
+
         recorderViewPager.setAdapter(adapter);
     }
 

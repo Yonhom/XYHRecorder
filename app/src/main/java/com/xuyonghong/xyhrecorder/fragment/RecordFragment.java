@@ -1,9 +1,11 @@
 package com.xuyonghong.xyhrecorder.fragment;
 
 import android.content.Context;
-import android.net.Uri;
+import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
+import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.Fragment;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -11,7 +13,7 @@ import android.view.ViewGroup;
 import android.widget.TextView;
 
 import com.xuyonghong.xyhrecorder.R;
-import com.xuyonghong.xyhrecorder.listener.FragmentInteractionListener;
+import com.xuyonghong.xyhrecorder.media.RecordManager;
 import com.xuyonghong.xyhrecorder.util.CommonUtils;
 import com.xuyonghong.xyhrecorder.view.TimerRing;
 
@@ -40,17 +42,14 @@ public class RecordFragment extends Fragment {
     private String mParam1;
     private String mParam2;
 
+    private static int recordingCount;
+
     /**
-     * this listener is often a activity, representing a bridge
-     * between the current fragment and the activity this fragment is in
+     * status of the permission of recording
      */
-    private FragmentInteractionListener mListener;
-    public FragmentInteractionListener getmListener() {
-        return mListener;
-    }
-    public void setmListener(FragmentInteractionListener mListener) {
-        this.mListener = mListener;
-    }
+    private boolean recordPermissionGranted;
+
+    private String[] permissions = {android.Manifest.permission.RECORD_AUDIO};
 
     /**
      * the current fragment's title
@@ -86,6 +85,9 @@ public class RecordFragment extends Fragment {
             mParam1 = getArguments().getString(ARG_PARAM1);
             mParam2 = getArguments().getString(ARG_PARAM2);
         }
+
+        // request recording permission
+        ActivityCompat.requestPermissions(getActivity(), permissions, 200);
     }
 
     @BindView(R.id.timer_display)
@@ -102,6 +104,13 @@ public class RecordFragment extends Fragment {
      */
     private boolean recording = false;
 
+    public int getCurrentRecordCount() {
+        SharedPreferences record_count
+                = getActivity().getSharedPreferences("record_count", Context.MODE_PRIVATE);
+        return record_count.getInt("current_count", 1);
+    }
+
+
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
@@ -109,14 +118,23 @@ public class RecordFragment extends Fragment {
         View view = inflater.inflate(R.layout.fragment_record, container, false);
         ButterKnife.bind(this, view);
 
+        // set the current record_count form shared preference
+        recordingCount = getCurrentRecordCount();
+
         recordButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 recording = !recording;
                 if (recording) {
                     startTimer();
+                    // start recording
+                    RecordManager.getInstance().record("My_Recording_" + ++recordingCount);
                 } else {
                     stopTimer();
+                    RecordManager.getInstance().stopRecord();
+
+                    //
+
                 }
                 // 更新UI
                 updateUI();
@@ -135,6 +153,7 @@ public class RecordFragment extends Fragment {
             textIndicator.setText("点击按钮开始录音");
             recordButton.setImageResource(R.drawable.ic_mic_white_36dp);
         }
+
 
     }
 
@@ -171,28 +190,27 @@ public class RecordFragment extends Fragment {
         timerRing.setTotolSeconds(0);
     }
 
-    // TODO: Rename method, update argument and hook method into UI event
-    public void onButtonPressed(Uri uri) {
-        if (mListener != null) {
-            mListener.onFragmentInteraction(this, uri);
-        }
-    }
-
     @Override
-    public void onAttach(Context context) {
-        super.onAttach(context);
-        if (context instanceof FragmentInteractionListener) {
-            mListener = (FragmentInteractionListener) context;
-        } else {
-            throw new RuntimeException(context.toString()
-                    + " must implement OnFragmentInteractionListener");
-        }
+    public void onDestroy() {
+        super.onDestroy();
+        SharedPreferences record_count = getActivity().getSharedPreferences("record_count", Context.MODE_PRIVATE);
+        record_count.edit().putInt("current_count", recordingCount).apply();
     }
 
+    /**
+     * when the requestPermission() is called, this method will be called
+     * @param requestCode
+     * @param permissions
+     * @param grantResults
+     */
     @Override
-    public void onDetach() {
-        super.onDetach();
-        mListener = null;
+    public void onRequestPermissionsResult(int requestCode, @android.support.annotation.NonNull String[] permissions, @android.support.annotation.NonNull int[] grantResults) {
+        switch (requestCode) {
+            case 200:
+                recordPermissionGranted = grantResults[0] == PackageManager.PERMISSION_GRANTED;
+                break;
+        }
+        // if permission is not granted, finish the activity this fragment is in
+        if (!recordPermissionGranted) getActivity().finish();
     }
-
 }
